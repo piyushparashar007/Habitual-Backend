@@ -1,0 +1,49 @@
+version: '3.8'
+services:
+  users:
+    build: ./users
+    restart: unless-stopped
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=3001
+    volumes:
+      - users_data:/app/data
+      - ./backend/users/uploads:/app/uploads
+
+    networks:
+      - backend_net
+
+  activities:
+    build: ./activities
+    restart: unless-stopped
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=3003
+    volumes:
+      - activities_data:/app/data
+    networks:
+      - backend_net
+
+  gateway:
+    build: ./gateway
+    restart: unless-stopped
+    environment:
+      - USERS_URL=http://users:3001
+      - ACTIVITIES_URL=http://activities:3003
+      - PORT=3002
+    ports:
+      - "3002:3002"
+    depends_on:
+      - users
+      - activities
+    networks:
+      - backend_net
+
+volumes:
+  users_data:
+  activities_data:
+  users_uploads:
+
+networks:
+  backend_net:
+    driver: bridge

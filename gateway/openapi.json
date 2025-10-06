@@ -1,0 +1,93 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Activityual Gateway API",
+    "version": "0.1.0",
+    "description": "Gateway proxy to users and activities microservices (development docs)."
+  },
+  "servers": [
+    { "url": "http://localhost:3002", "description": "Local gateway" }
+  ],
+  "paths": {
+    "/signup": {
+      "post": {
+        "summary": "Register a new user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "properties": { "email": { "type": "string" }, "password": { "type": "string" }, "name": { "type": "string" } }, "required": ["email", "password"] }
+            }
+          }
+        },
+        "responses": { "200": { "description": "User created and token returned" }, "400": { "description": "Bad request" } }
+      }
+    },
+    "/login": {
+      "post": {
+        "summary": "Authenticate user",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "email": { "type": "string" }, "password": { "type": "string" } }, "required": ["email", "password"] } } }
+        },
+        "responses": { "200": { "description": "Auth token and user" }, "401": { "description": "Unauthorized" } }
+      }
+    },
+    "/account/{id}": {
+      "get": {
+        "summary": "Get account by id",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "User returned" }, "404": { "description": "Not found" } }
+      }
+    },
+    "/account/update": {
+      "post": {
+        "summary": "Update account (multipart/form-data allowed for avatar)",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "email": { "type": "string" },
+                  "name": { "type": "string" },
+                  "avatar": { "type": "string", "format": "binary" }
+                },
+                "required": ["id"]
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "id": { "type": "string" }, "email": { "type": "string" }, "name": { "type": "string" } },
+                "required": ["id"]
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Updated user" } }
+      }
+    },
+    "/activities": {
+      "get": { "summary": "List activities", "responses": { "200": { "description": "List returned" } } },
+      "post": { "summary": "Create activity", "requestBody": { "content": { "application/json": { "schema": { "type": "object" } } } }, "responses": { "200": { "description": "Created" } } }
+    },
+    "/activities/{id}/log": {
+      "post": {
+        "summary": "Log activity status",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object", "properties": { "date": { "type": "string" }, "status": { "type": "string" } } } } } },
+        "responses": { "200": { "description": "Logged" } }
+      }
+    },
+    "/analytics/{userId}": {
+      "get": {
+        "summary": "Get analytics for user",
+        "parameters": [{ "name": "userId", "in": "path", "schema": { "type": "string" }, "required": true }],
+        "responses": { "200": { "description": "Analytics payload" } }
+      }
+    },
+    "/due": { "get": { "summary": "Activities due today", "responses": { "200": { "description": "List" } } } }
+  }
+}
