@@ -1,4 +1,4 @@
-# Activityual — Lightweight backend (Docker)
+# Habitual — Lightweight backend (Docker)
 
 ## Quick start (local)
 1. Copy `.env` and set `JWT_SECRET` (do not use default in production).
