@@ -8,9 +8,25 @@ const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const jwt = require('jsonwebtoken');
+const amqp = require('amqplib');
 
 const PORT = process.env.PORT || 3003;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret';
+const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://guest:guest@rabbitmq:5672';
+
+let amqpChannel = null;
+async function connectRabbitMQ() {
+  try {
+    const conn = await amqp.connect(RABBITMQ_URL);
+    amqpChannel = await conn.createChannel();
+    await amqpChannel.assertExchange('activity_events', 'fanout', { durable: false });
+    console.log('Connected to RabbitMQ');
+  } catch (err) {
+    console.error('RabbitMQ connection failed, retrying in 5s...', err.message);
+    setTimeout(connectRabbitMQ, 5000);
+  }
+}
+connectRabbitMQ();
 const DATA_DIR = path.join(__dirname, 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
 const dbFile = path.join(DATA_DIR, 'activities.db');
@@ -84,6 +100,15 @@ app.post('/activities/:id/log', (req, res) => {
   const id = uuidv4();
   db.prepare('INSERT INTO logs (id,activity_id,user_id,date,status) VALUES (?,?,?,?,?)')
     .run(id, aid, uid, date, status);
+  
+  if (amqpChannel) {
+    const eventMsg = JSON.stringify({ 
+      event: 'ACTIVITY_LOGGED', 
+      payload: { id, activity_id: aid, user_id: uid, date, status, created_at: new Date().toISOString() } 
+    });
+    amqpChannel.publish('activity_events', '', Buffer.from(eventMsg));
+  }
+
   res.json({ id, activity_id: aid, user_id: uid, date, status });
 });
 

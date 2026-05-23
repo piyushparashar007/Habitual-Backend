@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: habitual-config
+data:
+  USERS_URL: "http://users-service:3001"
+  ACTIVITIES_URL: "http://activities-service:3003"
+  COACH_URL: "http://coach-service:3004"
+  RECOMMENDATIONS_URL: "http://recommendations-service:3005"
+  RABBITMQ_URL: "amqp://guest:guest@rabbitmq-service:5672/"
+  OLLAMA_URL: "http://host.minikube.internal:11434"

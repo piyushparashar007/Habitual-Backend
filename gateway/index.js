@@ -9,6 +9,8 @@ const path = require('path');
 
 const USERS_URL = process.env.USERS_URL || 'http://users:3001';
 const ACTIVITIES_URL = process.env.ACTIVITIES_URL || 'http://activities:3003';
+const COACH_URL = process.env.COACH_URL || 'http://coach:3004';
+const RECOMMENDATIONS_URL = process.env.RECOMMENDATIONS_URL || 'http://recommendations:3005';
 const PORT = process.env.PORT || 3002;
 
 const app = express();
@@ -47,8 +49,8 @@ function makeProxy(target) {
   return createProxyMiddleware({
     target,
     changeOrigin: true,
-    proxyTimeout: 10_000,       // give upstream 10s before proxy times out
-    timeout: 30_000,            // socket timeout
+    proxyTimeout: 60_000,       // give upstream 60s (LLMs can be slow)
+    timeout: 60_000,            // socket timeout 60s
     onProxyReq: (proxyReq, req, res) => {
       try {
         attachBodyToProxy(proxyReq, req, res);
@@ -76,6 +78,10 @@ app.use('/activities', makeProxy(ACTIVITIES_URL));
 app.use('/due', makeProxy(ACTIVITIES_URL));
 app.use('/analytics', makeProxy(ACTIVITIES_URL));
 app.use('/logs', makeProxy(ACTIVITIES_URL));
+
+app.use('/coach', makeProxy(COACH_URL));
+app.use('/recommendations/stats', makeProxy(RECOMMENDATIONS_URL));
+app.use('/recommendations', makeProxy(RECOMMENDATIONS_URL));
 
 app.listen(PORT, () => {
   console.log(`Gateway listening on ${PORT}`);

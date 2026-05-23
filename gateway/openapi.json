@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Activityual Gateway API",
+    "title": "Habitual Gateway API",
     "version": "0.1.0",
     "description": "Gateway proxy to users and activities microservices (development docs)."
   },
@@ -88,6 +88,40 @@
         "responses": { "200": { "description": "Analytics payload" } }
       }
     },
-    "/due": { "get": { "summary": "Activities due today", "responses": { "200": { "description": "List" } } } }
+    "/due": { "get": { "summary": "Activities due today", "responses": { "200": { "description": "List" } } } },
+    "/coach/ask": {
+      "post": {
+        "summary": "Ask the AI Activity Coach",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "user_id": { "type": "string" }, "question": { "type": "string" } } } } }
+        },
+        "responses": { "200": { "description": "AI response and context used" } }
+      }
+    },
+    "/recommendations/{userId}": {
+      "get": {
+        "summary": "Get recommendations for user",
+        "parameters": [{ "name": "userId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "List of recommendations" } }
+      }
+    },
+    "/recommendations/stats/{userId}": {
+      "get": {
+        "summary": "Get activity stats for user (hourly/daily success rates)",
+        "parameters": [{ "name": "userId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Hourly and daily success stats" } }
+      }
+    },
+    "/recommendations/accept": {
+      "post": {
+        "summary": "Accept a recommendation",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "user_id": { "type": "string" }, "recommendation_id": { "type": "string" }, "accepted": { "type": "boolean" } } } } }
+        },
+        "responses": { "200": { "description": "Accepted status" } }
+      }
+    }
   }
 }

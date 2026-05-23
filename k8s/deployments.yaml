@@ -1,0 +1,377 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      containers:
+      - name: gateway
+        image: habitual-backend-gateway:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3002
+        envFrom:
+        - configMapRef:
+            name: habitual-config
+        resources:
+          requests:
+            cpu: "100m"
+          limits:
+            cpu: "250m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: gateway
+  ports:
+  - protocol: TCP
+    port: 3002
+    targetPort: 3002
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: gateway-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: gateway-deployment
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: users
+  template:
+    metadata:
+      labels:
+        app: users
+    spec:
+      containers:
+      - name: users
+        image: habitual-backend-users:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3001
+        envFrom:
+        - secretRef:
+            name: habitual-secrets
+        resources:
+          requests:
+            cpu: "100m"
+          limits:
+            cpu: "250m"
+        volumeMounts:
+        - name: users-data
+          mountPath: /app/data
+      volumes:
+      - name: users-data
+        persistentVolumeClaim:
+          claimName: users-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: users-service
+spec:
+  selector:
+    app: users
+  ports:
+  - protocol: TCP
+    port: 3001
+    targetPort: 3001
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: users-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: users-deployment
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: activities-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: activities
+  template:
+    metadata:
+      labels:
+        app: activities
+    spec:
+      containers:
+      - name: activities
+        image: habitual-backend-activities:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3003
+        envFrom:
+        - secretRef:
+            name: habitual-secrets
+        - configMapRef:
+            name: habitual-config
+        resources:
+          requests:
+            cpu: "100m"
+          limits:
+            cpu: "250m"
+        volumeMounts:
+        - name: activities-data
+          mountPath: /app/data
+      volumes:
+      - name: activities-data
+        persistentVolumeClaim:
+          claimName: activities-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: activities-service
+spec:
+  selector:
+    app: activities
+  ports:
+  - protocol: TCP
+    port: 3003
+    targetPort: 3003
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: activities-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: activities-deployment
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coach-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coach
+  template:
+    metadata:
+      labels:
+        app: coach
+    spec:
+      hostAliases:
+      - ip: "192.168.64.1"
+        hostnames:
+        - "host.minikube.internal"
+      containers:
+      - name: coach
+        image: habitual-backend-coach:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3004
+        envFrom:
+        - configMapRef:
+            name: habitual-config
+        resources:
+          requests:
+            cpu: "100m"
+          limits:
+            cpu: "500m"
+        volumeMounts:
+        - name: coach-data
+          mountPath: /app/data
+      volumes:
+      - name: coach-data
+        persistentVolumeClaim:
+          claimName: coach-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coach-service
+spec:
+  selector:
+    app: coach
+  ports:
+  - protocol: TCP
+    port: 3004
+    targetPort: 3004
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: coach-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: coach-deployment
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recommendations-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: recommendations
+  template:
+    metadata:
+      labels:
+        app: recommendations
+    spec:
+      containers:
+      - name: recommendations
+        image: habitual-backend-recommendations:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3005
+        envFrom:
+        - configMapRef:
+            name: habitual-config
+        resources:
+          requests:
+            cpu: "100m"
+          limits:
+            cpu: "250m"
+        volumeMounts:
+        - name: recommendations-data
+          mountPath: /app/data
+      volumes:
+      - name: recommendations-data
+        persistentVolumeClaim:
+          claimName: recommendations-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: recommendations-service
+spec:
+  selector:
+    app: recommendations
+  ports:
+  - protocol: TCP
+    port: 3005
+    targetPort: 3005
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: recommendations-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: recommendations-deployment
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+      - name: rabbitmq
+        image: rabbitmq:3-management-alpine
+        ports:
+        - containerPort: 5672
+        - containerPort: 15672
+        resources:
+          requests:
+            cpu: "100m"
+          limits:
+            cpu: "250m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-service
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+  - name: amqp
+    protocol: TCP
+    port: 5672
+    targetPort: 5672
+  - name: management
+    protocol: TCP
+    port: 15672
+    targetPort: 15672
