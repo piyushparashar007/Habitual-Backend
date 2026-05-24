@@ -14,6 +14,10 @@ app = FastAPI()
 RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672/")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
 
+# If OLLAMA_URL is just an IP (from Kubernetes Downward API), format it
+if not OLLAMA_URL.startswith("http"):
+    OLLAMA_URL = f"http://{OLLAMA_URL}:11434"
+
 # Initialize ChromaDB
 chroma_client = chromadb.PersistentClient(path="/app/data/chroma")
 # Use ChromaDB's default embedding function (usually all-MiniLM-L6-v2)

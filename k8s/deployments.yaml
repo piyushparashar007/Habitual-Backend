@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: gateway
-        image: habitual-gateway:latest
+        image: <ECR_REGISTRY>/habitual-gateway:latest
         ports:
         - containerPort: 3002
         envFrom:
@@ -77,7 +77,7 @@ spec:
     spec:
       containers:
       - name: users
-        image: habitual-users:latest
+        image: <ECR_REGISTRY>/habitual-users:latest
         ports:
         - containerPort: 3001
         envFrom:
@@ -146,7 +146,7 @@ spec:
     spec:
       containers:
       - name: activities
-        image: habitual-activities:latest
+        image: <ECR_REGISTRY>/habitual-activities:latest
         ports:
         - containerPort: 3003
         envFrom:
@@ -212,13 +212,9 @@ spec:
       labels:
         app: coach
     spec:
-      hostAliases:
-      - ip: "192.168.64.1"
-        hostnames:
-        - "host.minikube.internal"
       containers:
       - name: coach
-        image: habitual-coach:latest
+        image: <ECR_REGISTRY>/habitual-coach:latest
         ports:
         - containerPort: 3004
         envFrom:
@@ -284,7 +280,7 @@ spec:
     spec:
       containers:
       - name: recommendations
-        image: habitual-recommendations:latest
+        image: <ECR_REGISTRY>/habitual-recommendations:latest
         ports:
         - containerPort: 3005
         envFrom:

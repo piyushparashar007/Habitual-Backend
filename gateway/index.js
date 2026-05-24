@@ -7,10 +7,10 @@ const swaggerUi = require('swagger-ui-express');
 const fs = require('fs');
 const path = require('path');
 
-const USERS_URL = process.env.USERS_URL || 'http://users:3001';
-const ACTIVITIES_URL = process.env.ACTIVITIES_URL || 'http://activities:3003';
-const COACH_URL = process.env.COACH_URL || 'http://coach:3004';
-const RECOMMENDATIONS_URL = process.env.RECOMMENDATIONS_URL || 'http://recommendations:3005';
+const USERS_URL = process.env.USERS_URL || 'http://users-service:3001';
+const ACTIVITIES_URL = process.env.ACTIVITIES_URL || 'http://activities-service:3003';
+const COACH_URL = process.env.COACH_URL || 'http://coach-service:3004';
+const RECOMMENDATIONS_URL = process.env.RECOMMENDATIONS_URL || 'http://recommendations-service:3005';
 const PORT = process.env.PORT || 3002;
 
 const app = express();
@@ -23,19 +23,13 @@ app.get('/health', (req, res) => res.json({ ok: true, services: { users: USERS_U
 // Serve OpenAPI/Swagger
 const openapiPath = path.join(__dirname, 'openapi.json');
 let openapi = {};
-try {
-  openapi = JSON.parse(fs.readFileSync(openapiPath, 'utf8'));
-} catch (e) {
-  console.warn('Could not load openapi.json', e && e.message);
-}
+try { openapi = JSON.parse(fs.readFileSync(openapiPath, 'utf8')); } catch (e) {}
 if (Object.keys(openapi).length) {
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapi, { explorer: true }));
-  console.log('Swagger UI available at /docs');
 }
 
-// Helper: copy parsed body into proxied request (works when body-parser already parsed it)
-function attachBodyToProxy(proxyReq, req, res) {
-  // If bodyParser has populated req.body (for JSON/form data), forward it
+// Helper: copy parsed body into proxied request
+function attachBodyToProxy(proxyReq, req) {
   if (req.body && Object.keys(req.body).length) {
     const bodyData = JSON.stringify(req.body);
     proxyReq.setHeader('Content-Type', 'application/json');
@@ -44,45 +38,56 @@ function attachBodyToProxy(proxyReq, req, res) {
   }
 }
 
-// Proxy creation helper with sensible defaults and request body forward
-function makeProxy(target) {
-  return createProxyMiddleware({
-    target,
-    changeOrigin: true,
-    proxyTimeout: 60_000,       // give upstream 60s (LLMs can be slow)
-    timeout: 60_000,            // socket timeout 60s
-    onProxyReq: (proxyReq, req, res) => {
-      try {
-        attachBodyToProxy(proxyReq, req, res);
-      } catch (e) {
-        // don't crash; just continue
-        console.warn('attachBodyToProxy failed', e && e.message);
-      }
-    },
-    onError: (err, req, res) => {
-      console.error('Proxy error to', target, err && err.message);
-      try {
-        if (!res.headersSent) res.status(502).json({ error: 'upstream_unavailable', details: err && err.message });
-      } catch (e) {}
-    }
-  });
-}
+// Global Proxy defaults
+const proxyOptions = {
+  changeOrigin: true,
+  proxyTimeout: 60_000,
+  timeout: 60_000,
+  onProxyReq: attachBodyToProxy,
+  onError: (err, req, res) => {
+    console.error(`Proxy error [${req.path}] ->`, err && err.message);
+    if (!res.headersSent) res.status(502).json({ error: 'upstream_unavailable' });
+  }
+};
 
-// Proxy routes
-app.use('/signup', makeProxy(USERS_URL));
-app.use('/login', makeProxy(USERS_URL));
-app.use('/account', makeProxy(USERS_URL));
-app.use('/uploads', makeProxy(USERS_URL));
+/** 
+ * TRANSPARENT PROXYING
+ * We mount at root and use a filter function.
+ * This prevents http-proxy-middleware from stripping the mount path.
+ */
 
-app.use('/activities', makeProxy(ACTIVITIES_URL));
-app.use('/due', makeProxy(ACTIVITIES_URL));
-app.use('/analytics', makeProxy(ACTIVITIES_URL));
-app.use('/logs', makeProxy(ACTIVITIES_URL));
-
-app.use('/coach', makeProxy(COACH_URL));
-app.use('/recommendations/stats', makeProxy(RECOMMENDATIONS_URL));
-app.use('/recommendations', makeProxy(RECOMMENDATIONS_URL));
-
-app.listen(PORT, () => {
-  console.log(`Gateway listening on ${PORT}`);
+// Users Service
+app.use((req, res, next) => {
+  const paths = ['/signup', '/login', '/account', '/uploads'];
+  if (paths.some(p => req.path.startsWith(p))) {
+    return createProxyMiddleware({ ...proxyOptions, target: USERS_URL })(req, res, next);
+  }
+  next();
 });
+
+// Activities Service
+app.use((req, res, next) => {
+  const paths = ['/activities', '/due', '/analytics', '/logs'];
+  if (paths.some(p => req.path.startsWith(p))) {
+    return createProxyMiddleware({ ...proxyOptions, target: ACTIVITIES_URL })(req, res, next);
+  }
+  next();
+});
+
+// Coach Service
+app.use((req, res, next) => {
+  if (req.path.startsWith('/coach')) {
+    return createProxyMiddleware({ ...proxyOptions, target: COACH_URL })(req, res, next);
+  }
+  next();
+});
+
+// Recommendations Service
+app.use((req, res, next) => {
+  if (req.path.startsWith('/recommendations')) {
+    return createProxyMiddleware({ ...proxyOptions, target: RECOMMENDATIONS_URL })(req, res, next);
+  }
+  next();
+});
+
+app.listen(PORT, () => console.log(`Gateway listening on ${PORT}`));
