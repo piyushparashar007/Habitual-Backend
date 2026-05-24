@@ -14,13 +14,15 @@ spec:
     spec:
       containers:
       - name: gateway
-        image: habitual-backend-gateway:latest
-        imagePullPolicy: Never
+        image: habitual-gateway:latest
         ports:
         - containerPort: 3002
         envFrom:
         - configMapRef:
             name: habitual-config
+        env:
+        - name: DATABASE_URL
+          value: "postgres://habitual_user:Password123@habitual-db-endpoint:5432/habitual"
         resources:
           requests:
             cpu: "100m"
@@ -75,13 +77,15 @@ spec:
     spec:
       containers:
       - name: users
-        image: habitual-backend-users:latest
-        imagePullPolicy: Never
+        image: habitual-users:latest
         ports:
         - containerPort: 3001
         envFrom:
         - secretRef:
             name: habitual-secrets
+        env:
+        - name: DATABASE_URL
+          value: "postgres://habitual_user:Password123@habitual-db-endpoint:5432/habitual"
         resources:
           requests:
             cpu: "100m"
@@ -142,8 +146,7 @@ spec:
     spec:
       containers:
       - name: activities
-        image: habitual-backend-activities:latest
-        imagePullPolicy: Never
+        image: habitual-activities:latest
         ports:
         - containerPort: 3003
         envFrom:
@@ -215,8 +218,7 @@ spec:
         - "host.minikube.internal"
       containers:
       - name: coach
-        image: habitual-backend-coach:latest
-        imagePullPolicy: Never
+        image: habitual-coach:latest
         ports:
         - containerPort: 3004
         envFrom:
@@ -282,13 +284,15 @@ spec:
     spec:
       containers:
       - name: recommendations
-        image: habitual-backend-recommendations:latest
-        imagePullPolicy: Never
+        image: habitual-recommendations:latest
         ports:
         - containerPort: 3005
         envFrom:
         - configMapRef:
             name: habitual-config
+        env:
+        - name: DATABASE_URL
+          value: "postgres://habitual_user:Password123@habitual-db-endpoint:5432/habitual"
         resources:
           requests:
             cpu: "100m"

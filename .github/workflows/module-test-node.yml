@@ -1,0 +1,28 @@
+name: Node.js Test Module
+
+on:
+  workflow_call:
+    inputs:
+      service_path:
+        required: true
+        type: string
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install & Test
+        working-directory: ${{ inputs.service_path }}
+        run: |
+          npm install
+          if npm run | grep -q "test"; then
+            npm test
+          else
+            echo "No tests found, verifying build..."
+            node --check index.js
+          fi
