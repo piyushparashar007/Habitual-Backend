@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  gateway:
+    build: ./gateway
+    ports:
+      - "3002:3002"
+    environment:
+      - USERS_URL=http://users:3001
+      - ACTIVITIES_URL=http://activities:3003
+      - COACH_URL=http://coach:3004
+      - RECOMMENDATIONS_URL=http://recommendations:3005
+    depends_on:
+      - users
+      - activities
+      - coach
+      - recommendations
+
+  users:
+    build: ./users
+    ports:
+      - "3001:3001"
+    environment:
+      - JWT_SECRET=my_super_secret
+    volumes:
+      - users_data:/app/data
+
+  activities:
+    build: ./activities
+    ports:
+      - "3003:3003"
+    environment:
+      - JWT_SECRET=my_super_secret
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      - rabbitmq
+    volumes:
+      - activities_data:/app/data
+
+  coach:
+    build: ./coach
+    ports:
+      - "3004:3004"
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - OLLAMA_URL=http://host.docker.internal:11434
+    depends_on:
+      - rabbitmq
+    volumes:
+      - coach_data:/app/data
+
+  recommendations:
+    build: ./recommendations
+    ports:
+      - "3005:3005"
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      - rabbitmq
+    volumes:
+      - recommendations_data:/app/data
+
+volumes:
+  rabbitmq_data:
+  users_data:
+  activities_data:
+  coach_data:
+  recommendations_data:
